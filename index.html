@@ -1,1059 +1,651 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0f2640">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="LMB Träning">
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <title>LMB Träning – Läkemedelsberäkning</title>
-  <style>
-    :root {
-      --navy: #0f2640;
-      --navy2: #1a3a5c;
-      --teal: #0e8c7a;
-      --teal-light: #13b3a0;
-      --coral: #e8534a;
-      --gold: #f0a500;
-      --gold-bg: rgba(240,165,0,0.15);
-      --cream: #f7f3ee;
-      --white: #ffffff;
-      --gray1: #eef1f4;
-      --gray2: #c8d0da;
-      --gray3: #8a97a8;
-      --text: #1a2b3c;
-      --r: 14px;
-      --rCard: 18px;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-    html, body {
-      height: 100%; width: 100%;
-      overflow: hidden;
-      font-family: 'DM Sans', sans-serif;
-      background: var(--navy);
-      color: var(--text);
-      font-size: 18px;
-    }
-
-    #app {
-      height: 100dvh;
-      display: flex; flex-direction: column;
-      overflow: hidden; position: relative;
-    }
-
-    .screen {
-      position: absolute; inset: 0;
-      display: flex; flex-direction: column;
-      transition: opacity 0.22s ease, transform 0.22s ease;
-      opacity: 0; pointer-events: none; transform: translateX(18px);
-      overflow: hidden;
-    }
-    .screen.active { opacity: 1; pointer-events: all; transform: translateX(0); }
-
-    /* ═══════════════════════════
-       START SCREEN
-    ═══════════════════════════ */
-    #startScreen {
-      background: linear-gradient(160deg, #091b30 0%, #0f2640 55%, #0d2a44 100%);
-      padding: 0 20px;
-      display: flex; flex-direction: column;
-    }
-
-    .start-header {
-      padding: calc(env(safe-area-inset-top, 0px) + 22px) 0 12px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .app-brand { display: flex; flex-direction: column; }
-    .app-title {
-      font-family: 'Lora', serif;
-      font-size: 26px; font-weight: 700;
-      color: var(--white); line-height: 1;
-    }
-    .app-subtitle {
-      font-size: 13px; color: var(--gray3); letter-spacing: 1.2px;
-      text-transform: uppercase; margin-top: 4px;
-    }
-    .countdown-block { display: flex; flex-direction: column; align-items: flex-end; }
-    .countdown-num {
-      font-family: 'Lora', serif;
-      font-size: 36px; font-weight: 700; color: var(--white); line-height: 1;
-    }
-    .countdown-label { font-size: 12px; color: var(--gray3); letter-spacing: 1px; text-transform: uppercase; }
-
-    /* Overview card */
-    .overview-card {
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: var(--rCard);
-      padding: 12px 15px;
-      margin-bottom: 10px;
-    }
-    .overview-stats {
-      display: flex; justify-content: space-between; align-items: flex-end;
-      margin-bottom: 10px;
-    }
-    .stat-block { display: flex; flex-direction: column; }
-    .stat-num {
-      font-family: 'Lora', serif;
-      font-size: 34px; font-weight: 700; color: var(--white); line-height: 1;
-    }
-    .stat-num.accent { color: var(--teal-light); }
-    .stat-label { font-size: 14px; color: var(--gray3); margin-top: 3px; }
-
-    .progress-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 6px;
-    }
-    .progress-title { font-size: 13px; color: rgba(255,255,255,0.45); }
-    .progress-pct { font-size: 14px; color: var(--teal-light); font-weight: 600; }
-    .progress-track {
-      height: 8px; background: rgba(255,255,255,0.08);
-      border-radius: 99px; overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%; border-radius: 99px;
-      background: linear-gradient(90deg, var(--teal), var(--teal-light));
-      transition: width 0.6s cubic-bezier(.4,0,.2,1);
-      position: relative;
-    }
-    .progress-fill-passed {
-      height: 100%; border-radius: 99px;
-      background: rgba(255,255,255,0.22);
-      position: absolute; top: 0; left: 0;
-      transition: width 0.6s cubic-bezier(.4,0,.2,1);
-    }
-    .progress-sub {
-      font-size: 12px; color: rgba(255,255,255,0.28); margin-top: 5px;
-      display: flex; justify-content: space-between;
-    }
-
-    /* Area rows */
-    .areas-label {
-      font-size: 13px; color: var(--gray3); letter-spacing: 1.5px;
-      text-transform: uppercase; margin-bottom: 6px;
-    }
-    .area-rows { display: flex; flex-direction: column; gap: 5px; }
-
-    .area-row {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 13px;
-      padding: 9px 13px;
-      display: flex; align-items: center; gap: 11px;
-    }
-    .area-row-icon { font-size: 22px; flex-shrink: 0; }
-    .area-row-body { flex: 1; min-width: 0; }
-    .area-row-top {
-      display: flex; align-items: center; justify-content: space-between; gap: 8px;
-    }
-    .area-row-name {
-      font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.88);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-
-    /* Strength pill */
-    .strength-pill {
-      font-size: 12px; font-weight: 700; letter-spacing: 0.4px;
-      text-transform: uppercase; padding: 3px 10px;
-      border-radius: 99px; flex-shrink: 0;
-      display: flex; align-items: center; gap: 4px;
-    }
-    .pill-none  { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.35); }
-    .pill-svag  { background: rgba(232,83,74,0.2);    color: #ff8077; }
-    .pill-medel { background: rgba(240,165,0,0.2);    color: #ffc43d; }
-    .pill-stark { background: rgba(19,179,160,0.2);   color: var(--teal-light); }
-
-    .area-row-sub { font-size: 13px; color: rgba(255,255,255,0.35); margin-top: 3px; }
-
-    /* Buttons */
-    .start-buttons {
-      display: flex; flex-direction: column; gap: 8px;
-      margin-top: auto;
-      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
-    }
-    .btn {
-      width: 100%; padding: 14px 20px;
-      border-radius: var(--r); border: none; cursor: pointer;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 19px; font-weight: 600;
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-      transition: opacity 0.15s, transform 0.15s;
-      -webkit-appearance: none;
-    }
-    .btn:active { opacity: 0.84; transform: scale(0.98); }
-    .btn-teal    { background: linear-gradient(135deg, var(--teal), var(--teal-light)); color: white; }
-    .btn-outline {
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.13);
-      color: rgba(255,255,255,0.88);
-    }
-    .btn-icon { font-size: 21px; }
-
-    /* ═══════════════════════════
-       EXAM SCREEN
-    ═══════════════════════════ */
-    #examScreen { background: var(--cream); }
-
-    .exam-topbar {
-      background: var(--navy);
-      padding: calc(env(safe-area-inset-top, 12px) + 8px) 20px 13px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .exam-meta { display: flex; flex-direction: column; }
-    .exam-label { font-size: 13px; color: var(--gray3); letter-spacing: 1.2px; text-transform: uppercase; }
-    .exam-title { font-size: 18px; font-weight: 600; color: white; margin-top: 2px; }
-
-    .exit-btn {
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 9px; padding: 8px 15px;
-      font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.8);
-      cursor: pointer; font-family: 'DM Sans', sans-serif;
-    }
-    .exit-btn:active { opacity: 0.7; }
-
-    /* Thin progress line */
-    .exam-progress-bar { height: 3px; background: rgba(0,0,0,0.08); }
-    .exam-progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--teal), var(--teal-light));
-      transition: width 0.4s ease;
-    }
-
-    /* Area tag inside exam */
-    .q-area-tag {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: var(--gray1); border-radius: 8px;
-      padding: 5px 11px; margin-bottom: 10px;
-      font-size: 15px; font-weight: 600; color: var(--navy2);
-    }
-
-    .exam-body {
-      flex: 1; overflow-y: auto;
-      padding: 14px 20px 0;
-      display: flex; flex-direction: column; gap: 11px;
-      -ms-overflow-style: none; scrollbar-width: none;
-    }
-    .exam-body::-webkit-scrollbar { display: none; }
-
-    .question-card {
-      background: var(--white); border-radius: var(--rCard);
-      padding: 16px 18px; box-shadow: 0 2px 14px rgba(0,0,0,0.07);
-    }
-    .question-number {
-      font-size: 13px; font-weight: 600; letter-spacing: 1.8px;
-      text-transform: uppercase; color: var(--gray3); margin-bottom: 8px;
-    }
-    .question-text {
-      font-size: 19px; line-height: 1.6; color: var(--navy); font-weight: 400;
-    }
-    .question-text strong { font-weight: 700; }
-    .question-hint {
-      margin-top: 10px; padding: 9px 13px;
-      background: rgba(14,140,122,0.07); border-radius: 10px;
-      border-left: 3px solid var(--teal); font-size: 16px; color: var(--navy2);
-      line-height: 1.5;
-    }
-
-    .answer-section {
-      background: var(--white); border-radius: var(--rCard);
-      padding: 13px 18px; box-shadow: 0 2px 14px rgba(0,0,0,0.07);
-    }
-    .answer-label {
-      font-size: 13px; font-weight: 600; letter-spacing: 1.5px;
-      text-transform: uppercase; color: var(--gray3); margin-bottom: 8px;
-    }
-    .answer-row { display: flex; align-items: center; gap: 10px; }
-    .answer-input {
-      flex: 1; padding: 12px 15px;
-      border: 2px solid var(--gray2); border-radius: 12px;
-      font-size: 20px; font-family: 'DM Sans', sans-serif;
-      color: var(--navy); outline: none;
-      transition: border-color 0.2s; -webkit-appearance: none;
-    }
-    .answer-input:focus { border-color: var(--teal); }
-    .answer-input.correct { border-color: var(--teal); background: rgba(14,140,122,0.05); }
-    .answer-input.wrong   { border-color: var(--coral); background: rgba(232,83,74,0.05); }
-    .answer-unit { font-size: 17px; font-weight: 500; color: var(--gray3); min-width: 44px; }
-
-    .feedback-msg {
-      margin-top: 8px; padding: 10px 13px;
-      border-radius: 11px; font-size: 17px; font-weight: 500; display: none;
-      line-height: 1.4;
-    }
-    .feedback-msg.correct { display: block; background: rgba(14,140,122,0.09); color: var(--teal); }
-    .feedback-msg.wrong   { display: block; background: rgba(232,83,74,0.09); color: #c0392b; }
-
-    .exam-footer {
-      padding: 10px 20px;
-      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
-      background: var(--cream);
-    }
-    .question-dots { display: flex; gap: 7px; justify-content: center; margin-bottom: 8px; }
-    .dot {
-      width: 9px; height: 9px; border-radius: 50%;
-      background: var(--gray2); transition: all 0.2s;
-    }
-    .dot.active   { background: var(--navy); transform: scale(1.4); }
-    .dot.done-ok  { background: var(--teal-light); }
-    .dot.done-fail{ background: var(--coral); }
-
-    /* ═══════════════════════════
-       DAILY SCREEN
-    ═══════════════════════════ */
-    #dailyScreen { background: var(--cream); }
-    .daily-topbar {
-      background: var(--navy2);
-      padding: calc(env(safe-area-inset-top, 12px) + 8px) 20px 13px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .daily-title { font-size: 18px; font-weight: 600; color: white; }
-
-    /* ═══════════════════════════
-       RESULT SCREEN
-    ═══════════════════════════ */
-    #resultScreen {
-      background: var(--cream);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 24px 26px; text-align: center;
-    }
-    .result-icon   { font-size: 58px; margin-bottom: 10px; }
-    .result-title  { font-family: 'Lora', serif; font-size: 32px; font-weight: 700; color: var(--navy); }
-    .result-subtitle { font-size: 18px; color: var(--gray3); margin-top: 6px; line-height: 1.5; }
-    .result-score  {
-      background: var(--white); border-radius: 22px;
-      padding: 14px 38px; margin: 14px 0;
-      box-shadow: 0 4px 22px rgba(0,0,0,0.09);
-    }
-    .result-score-num { font-family: 'Lora', serif; font-size: 52px; font-weight: 700; color: var(--teal); line-height: 1; }
-    .result-score-text { font-size: 16px; color: var(--gray3); margin-top: 4px; }
-
-    /* Per-area breakdown in result */
-    .result-area-list {
-      width: 100%; max-width: 340px;
-      display: flex; flex-direction: column; gap: 5px;
-      margin-bottom: 14px;
-    }
-    .ral-row {
-      background: var(--white); border-radius: 12px;
-      padding: 9px 14px;
-      display: flex; align-items: center; gap: 10px;
-      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
-    }
-    .ral-icon { font-size: 20px; }
-    .ral-name { flex: 1; font-size: 16px; font-weight: 500; color: var(--navy); }
-    .ral-result { font-size: 18px; }
-
-    .result-buttons { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 340px; }
-
-    /* ═══════════════════════════
-       SPLASH
-    ═══════════════════════════ */
-    #splash {
-      position: fixed; inset: 0; z-index: 999; background: var(--navy);
-      display: flex; align-items: center; justify-content: center;
-      flex-direction: column; gap: 12px;
-      transition: opacity 0.4s ease;
-    }
-    #splash.hide { opacity: 0; pointer-events: none; }
-    .splash-icon  { font-size: 50px; }
-    .splash-title { font-family: 'Lora', serif; font-size: 22px; font-weight: 700; color: white; }
-    .splash-sub   { font-size: 13px; color: var(--gray3); letter-spacing: 1.5px; text-transform: uppercase; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0c1e33">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LMB Träning">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>LMB Träning</title>
+<style>
+:root {
+  --bg:    #0c1e33;
+  --bg2:   #122540;
+  --bg3:   #1a3050;
+  --teal:  #10b49a;
+  --teal2: #0dd4b8;
+  --gold:  #f5a623;
+  --coral: #e85454;
+  --green: #22c55e;
+  --white: #eef3f8;
+  --muted: #7a94aa;
+  --r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;width:100%;font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--bg);color:var(--white);overflow:hidden;}
+#app{height:100dvh;overflow:hidden;position:relative;}
+.screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;opacity:0;pointer-events:none;transform:translateX(18px);transition:opacity .22s,transform .22s;-webkit-overflow-scrolling:touch;}
+.screen.active{opacity:1;pointer-events:all;transform:none;}
+/* splash */
+#splash{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99;transition:opacity .35s;}
+#splash.hide{opacity:0;pointer-events:none;}
+.splash-logo{font-size:38px;font-weight:800;color:var(--teal);letter-spacing:1px;}
+.splash-sub{font-size:12px;color:var(--muted);margin-top:4px;}
+/* ── START SCREEN ── */
+.start-wrap{padding:env(safe-area-inset-top,18px) 18px 8px;min-height:100dvh;display:flex;flex-direction:column;gap:12px;}
+.start-top{display:flex;align-items:center;justify-content:space-between;padding-bottom:2px;}
+.brand{font-size:22px;font-weight:800;color:var(--teal);letter-spacing:.5px;}
+.countdown{background:var(--bg2);border-radius:var(--r);padding:8px 13px;text-align:center;}
+.cd-num{font-size:26px;font-weight:800;color:var(--white);line-height:1;}
+.cd-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+/* progress card */
+.pcard{background:var(--bg2);border-radius:14px;padding:14px 16px;}
+.pcard-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.pcard-title{font-size:13px;font-weight:600;color:var(--white);}
+.pcard-val{font-size:13px;font-weight:700;color:var(--teal);}
+.pbar-track{height:7px;background:var(--bg3);border-radius:10px;overflow:hidden;}
+.pbar-fill{height:100%;border-radius:10px;transition:width .4s ease;background:var(--teal);}
+.pbar-fill.gold{background:linear-gradient(90deg,#f59e0b,#fbbf24);}
+.pbar-fill.teal{background:linear-gradient(90deg,var(--teal),var(--teal2));}
+/* streak card */
+.streak-card{background:var(--bg2);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;}
+.streak-icon{font-size:28px;line-height:1;}
+.streak-body{flex:1;}
+.streak-num{font-size:28px;font-weight:800;color:var(--gold);line-height:1;}
+.streak-lbl{font-size:11px;color:var(--muted);margin-top:2px;}
+.streak-dots{display:flex;gap:4px;margin-top:8px;}
+.streak-dot{width:10px;height:10px;border-radius:50%;background:var(--bg3);}
+.streak-dot.done{background:var(--gold);}
+/* area rows */
+.area-section{background:var(--bg2);border-radius:14px;overflow:hidden;}
+.area-title-row{padding:12px 16px 8px;display:flex;align-items:center;justify-content:space-between;}
+.area-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;}
+.area-row{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid #1e3448;}
+.area-icon{font-size:18px;width:28px;text-align:center;}
+.area-body{flex:1;}
+.area-name{font-size:14px;font-weight:600;color:var(--white);}
+.area-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+.strength-pill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;}
+.strength-svag{background:#3d1a1a;color:#f87171;}
+.strength-medel{background:#3d2e0a;color:#fbbf24;}
+.strength-stark{background:#0d3020;color:#4ade80;}
+/* action buttons */
+.btn-row{display:flex;flex-direction:column;gap:10px;margin-top:4px;padding-bottom:env(safe-area-inset-bottom,12px);}
+.btn{border:none;border-radius:14px;font-family:inherit;font-weight:700;cursor:pointer;transition:transform .1s,opacity .1s;}
+.btn:active{transform:scale(.97);opacity:.85;}
+.btn-primary{background:linear-gradient(135deg,var(--teal),var(--teal2));color:#fff;padding:16px;font-size:17px;width:100%;}
+.btn-secondary{background:var(--bg2);color:var(--white);padding:14px;font-size:16px;width:100%;border:1px solid var(--bg3);}
+.btn-ghost{background:transparent;color:var(--muted);padding:10px;font-size:14px;width:100%;}
+/* ── QUESTION SCREEN ── */
+.q-wrap{padding:env(safe-area-inset-top,16px) 18px 20px;min-height:100dvh;display:flex;flex-direction:column;gap:14px;}
+.q-header{display:flex;align-items:center;gap:12px;}
+.q-back{background:var(--bg2);border:none;color:var(--muted);font-size:20px;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.q-meta{flex:1;}
+.q-area{font-size:11px;color:var(--teal);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.q-progress-lbl{font-size:12px;color:var(--muted);}
+.q-card{background:var(--bg2);border-radius:14px;padding:18px;}
+.q-text{font-size:16px;font-weight:500;line-height:1.5;color:var(--white);}
+.q-hint-btn{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;display:block;margin-top:10px;}
+.q-hint{background:var(--bg3);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--teal);margin-top:8px;display:none;}
+.q-input-row{display:flex;gap:8px;align-items:center;}
+.q-input{background:var(--bg2);border:2px solid var(--bg3);border-radius:12px;color:var(--white);font-size:20px;font-weight:600;padding:14px 16px;flex:1;outline:none;-webkit-appearance:none;font-family:inherit;}
+.q-input:focus{border-color:var(--teal);}
+.q-unit{font-size:14px;color:var(--muted);white-space:nowrap;min-width:36px;}
+.feedback{border-radius:12px;padding:14px 16px;margin-top:2px;}
+.feedback.correct{background:#0a2e1c;border:1px solid var(--green);}
+.feedback.wrong{background:#2a0d0d;border:1px solid var(--coral);}
+.fb-title{font-size:15px;font-weight:700;}
+.fb-title.correct{color:var(--green);}
+.fb-title.wrong{color:var(--coral);}
+.fb-answer{font-size:14px;color:var(--muted);margin-top:4px;}
+/* ── EXAM RESULT SCREEN ── */
+.result-wrap{padding:env(safe-area-inset-top,20px) 18px 20px;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;}
+.result-emoji{font-size:56px;}
+.result-score{font-size:44px;font-weight:800;color:var(--white);}
+.result-msg{font-size:15px;color:var(--muted);max-width:260px;line-height:1.5;}
+.result-badge{background:var(--bg2);border-radius:14px;padding:14px 24px;display:inline-block;}
+.result-badge.pass{border:2px solid var(--green);color:var(--green);}
+.result-badge.fail{border:2px solid var(--coral);color:var(--coral);}
+.result-badge-txt{font-size:16px;font-weight:700;}
+/* daily done */
+.daily-done-wrap{padding:env(safe-area-inset-top,20px) 18px 20px;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;}
+/* ── ONBOARDING / SETTINGS ── */
+.ob-wrap{padding:env(safe-area-inset-top,40px) 24px 24px;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center;}
+.ob-icon{font-size:52px;}
+.ob-title{font-size:24px;font-weight:800;color:var(--white);}
+.ob-sub{font-size:14px;color:var(--muted);line-height:1.5;max-width:280px;}
+.ob-label{font-size:13px;font-weight:600;color:var(--muted);text-align:left;width:100%;max-width:320px;}
+.ob-date{background:var(--bg2);border:2px solid var(--bg3);border-radius:12px;color:var(--white);font-size:18px;font-weight:600;padding:14px 16px;width:100%;max-width:320px;outline:none;font-family:inherit;-webkit-appearance:none;}
+.ob-date:focus{border-color:var(--teal);}
+.ob-actions{display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px;}
+.settings-btn{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px;line-height:1;}
+/* scrollbar */
+::-webkit-scrollbar{width:3px;} ::-webkit-scrollbar-thumb{background:var(--bg3);}
+</style>
 </head>
 <body>
-
-<div id="splash">
-  <div class="splash-icon">💊</div>
-  <div class="splash-title">LMB Träning</div>
-  <div class="splash-sub">Laddar...</div>
-</div>
-
 <div id="app">
-
-  <!-- ══════════════════════════════
-       START SCREEN
-  ══════════════════════════════ -->
-  <div id="startScreen" class="screen">
-    <div class="start-header">
-      <div class="app-brand">
-        <div class="app-title">LMB Träning 💊</div>
-        <div class="app-subtitle">Läkemedelsberäkning</div>
-      </div>
-      <div class="countdown-block">
-        <div class="countdown-num" id="daysCount">–</div>
-        <div class="countdown-label">dagar kvar</div>
-      </div>
-    </div>
-
-    <div class="overview-card">
-      <div class="overview-stats">
-        <div class="stat-block">
-          <div class="stat-num accent" id="conductedCount">0</div>
-          <div class="stat-label">genomförda</div>
-        </div>
-        <div class="stat-block" style="text-align:right">
-          <div class="stat-num" id="passedCount">0</div>
-          <div class="stat-label">godkända</div>
-        </div>
-      </div>
-      <div class="progress-header">
-        <div class="progress-title">Totalt framsteg</div>
-        <div class="progress-pct" id="progressPct">0%</div>
-      </div>
-      <div class="progress-track">
-        <div class="progress-fill" id="progressFill" style="width:0%">
-          <div class="progress-fill-passed" id="progressPassed" style="width:0%"></div>
-        </div>
-      </div>
-      <div class="progress-sub">
-        <span id="progressSubLeft">0 av 20 minitentor genomförda</span>
-        <span>7 apr 2026</span>
-      </div>
-    </div>
-
-    <div class="areas-label">Ämnesområden</div>
-    <div class="area-rows" id="areaRows"></div>
-
-    <div class="start-buttons">
-      <button class="btn btn-teal" onclick="startDaily()">
-        <span class="btn-icon">🎲</span> Dagens fråga
-      </button>
-      <button class="btn btn-outline" onclick="startExam()">
-        <span class="btn-icon">📝</span> Starta minitenta
-      </button>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════
-       EXAM SCREEN
-  ══════════════════════════════ -->
-  <div id="examScreen" class="screen">
-    <div class="exam-topbar">
-      <div class="exam-meta">
-        <div class="exam-label">Minitenta <span id="examNum"></span> av 20</div>
-        <div class="exam-title">Läkemedelsberäkning</div>
-      </div>
-      <button class="exit-btn" onclick="confirmExit()">Avsluta ✕</button>
-    </div>
-    <div class="exam-progress-bar">
-      <div class="exam-progress-fill" id="examProgressFill" style="width:0%"></div>
-    </div>
-
-    <div class="exam-body">
-      <div class="question-card">
-        <div class="q-area-tag" id="qAreaTag"></div>
-        <div class="question-number" id="qNumber"></div>
-        <div class="question-text" id="qText"></div>
-        <div class="question-hint" id="qHint" style="display:none"></div>
-      </div>
-      <div class="answer-section">
-        <div class="answer-label">Ditt svar</div>
-        <div class="answer-row">
-          <input type="text" class="answer-input" id="answerInput"
-            inputmode="decimal" placeholder="Skriv svar här..."
-            autocomplete="off" autocorrect="off" spellcheck="false"
-            onkeydown="if(event.key==='Enter') submitAnswer()">
-          <div class="answer-unit" id="answerUnit"></div>
-        </div>
-        <div class="feedback-msg" id="feedbackMsg"></div>
-      </div>
-    </div>
-
-    <div class="exam-footer">
-      <div class="question-dots" id="questionDots"></div>
-      <button class="btn btn-teal" id="examActionBtn" onclick="submitAnswer()">
-        Kontrollera svar →
-      </button>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════
-       DAILY SCREEN
-  ══════════════════════════════ -->
-  <div id="dailyScreen" class="screen">
-    <div class="daily-topbar">
-      <div class="daily-title">🎲 Slumpad fråga</div>
-      <button class="exit-btn" onclick="showScreen('startScreen')">Avsluta ✕</button>
-    </div>
-
-    <div class="exam-body" id="dailyBody">
-      <div class="question-card">
-        <div class="q-area-tag" id="dqAreaTag"></div>
-        <div class="question-text" id="dqText"></div>
-        <div class="question-hint" id="dqHint" style="display:none"></div>
-      </div>
-      <div class="answer-section">
-        <div class="answer-label">Ditt svar</div>
-        <div class="answer-row">
-          <input type="text" class="answer-input" id="dailyAnswerInput"
-            inputmode="decimal" placeholder="Skriv svar här..."
-            autocomplete="off" autocorrect="off" spellcheck="false"
-            onkeydown="if(event.key==='Enter') submitDailyAnswer()">
-          <div class="answer-unit" id="dailyAnswerUnit"></div>
-        </div>
-        <div class="feedback-msg" id="dailyFeedbackMsg"></div>
-      </div>
-    </div>
-
-    <div class="exam-footer">
-      <button class="btn btn-teal" id="dailyActionBtn" onclick="submitDailyAnswer()">
-        Kontrollera svar →
-      </button>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════
-       RESULT SCREEN
-  ══════════════════════════════ -->
-  <div id="resultScreen" class="screen">
-    <div class="result-icon" id="resultIcon">🎉</div>
-    <div class="result-title" id="resultTitle">Godkänt!</div>
-    <div class="result-subtitle" id="resultSubtitle"></div>
-    <div class="result-score">
-      <div class="result-score-num" id="resultScoreNum">5/5</div>
-      <div class="result-score-text">rätta svar</div>
-    </div>
-    <div class="result-area-list" id="resultAreaList"></div>
-    <div class="result-buttons">
-      <button class="btn btn-teal" id="resultNextBtn" onclick="startExam()">
-        Nästa minitenta →
-      </button>
-      <button class="btn btn-outline" onclick="showScreen('startScreen')" style="color:white;">
-        Tillbaka till start
-      </button>
-    </div>
-  </div>
-
+  <div id="splash"><div class="splash-logo">LMB</div><div class="splash-sub">Träning</div></div>
+  <div id="sOnboard" class="screen"></div>
+  <div id="sStart"   class="screen"></div>
+  <div id="sDaily"  class="screen"></div>
+  <div id="sExam"   class="screen"></div>
+  <div id="sResult" class="screen"></div>
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════
-//  FRÅGEDATABAS
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════
+//  QUESTION BANK
+// ═══════════════════════════════════════════
 const AREAS = [
-  {
-    id: 0, name: 'Begrepp & Enheter', icon: '🧮',
-    questions: [
-      { q: 'Avrunda <strong>0,886</strong> till en decimals noggrannhet.', a: '0.9', unit: '', hint: 'Titta på andra decimalen: 8 ≥ 5 → avrunda uppåt.' },
-      { q: 'Avrunda <strong>0,496</strong> till en decimals noggrannhet.', a: '0.5', unit: '' },
-      { q: 'Avrunda <strong>0,1536</strong> till två decimalers noggrannhet.', a: '0.15', unit: '', hint: 'Titta på tredje decimalen: 3 < 5 → behåll.' },
-      { q: 'Avrunda <strong>0,265562</strong> till tre decimalers noggrannhet.', a: '0.266', unit: '', tol: 0.0005 },
-      { q: 'Avrunda <strong>1,2449</strong> till en decimals noggrannhet.', a: '1.2', unit: '' },
-      { q: '500 milligram = ______ mikrogram', a: '500000', unit: 'µg', hint: '1 mg = 1 000 µg' },
-      { q: '40 mikrogram = ______ milligram', a: '0.04', unit: 'mg', hint: '1 µg = 0,001 mg' },
-      { q: '0,2 milliliter = ______ mikroliter', a: '200', unit: 'µl', hint: '1 ml = 1 000 µl' },
-      { q: '1 gram = ______ milligram', a: '1000', unit: 'mg' },
-      { q: '2,5 gram = ______ milligram', a: '2500', unit: 'mg' },
-      { q: '750 mikrogram = ______ milligram', a: '0.75', unit: 'mg' },
-      { q: '3 000 mikrogram = ______ milligram', a: '3', unit: 'mg' },
-      { q: '0,5 liter = ______ milliliter', a: '500', unit: 'ml' },
-      { q: 'Glukos 10 % – uttryck styrkan i mg/ml.', a: '100', unit: 'mg/ml', hint: '10% = 10 g per 100 ml = 100 mg per ml' },
-      { q: 'En lösning innehåller 70 mg/ml. Vilken styrka i % är det?', a: '7', unit: '%', hint: '70 mg/ml = 7 g/100 ml = 7%' },
-      { q: 'Xylocain gel 2 %, 12 g appliceras.\nHur många mg lidocain?', a: '240', unit: 'mg', hint: '2% = 20 mg/g. 12 × 20 = 240 mg' },
-      { q: 'Bisolvon 1,6 mg/ml, 5 ml × 3 per dag.\nHur många dagar räcker 250 ml?', a: '16', unit: 'dagar', hint: 'Daglig dos: 15 ml. 250 ÷ 15 ≈ 16 hela dagar.' },
-      { q: 'Malvitona 700 ml. Patienten tar 30 ml × 2 per dag.\nHur många dagar räcker flaskan?', a: '11', unit: 'dagar', hint: '700 ÷ 60 = 11,67 → 11 hela dagar' },
-      { q: 'Insulin förfylld penna 3 ml (100 E/ml). Patient tar 20 E per dag.\nHur länge räcker pennan?', a: '15', unit: 'dagar', hint: '300 E ÷ 20 = 15 dagar' },
-      { q: 'Dalacin 150 mg kapslar. Byt till oral lösning Dalacin 15 mg/ml.\nHur många ml per dos?', a: '10', unit: 'ml', hint: '150 ÷ 15 = 10 ml' },
-    ]
-  },
-  {
-    id: 1, name: 'Dos & Injektion', icon: '💉',
-    questions: [
-      { q: 'Patient ordineras <strong>25 mg Petidin</strong> (50 mg/ml).\nHur många ml ska ges?', a: '0.5', unit: 'ml', hint: '25 ÷ 50 = 0,5 ml' },
-      { q: 'Morfin-Skopolamin (10 mg/ml + 0,4 mg/ml).\nOrdination: <strong>7,5 mg morfin</strong>.\nHur många ml?', a: '0.75', unit: 'ml', hint: '7,5 ÷ 10 = 0,75 ml' },
-      { q: 'Morfin-Skopolamin (10 mg/ml + 0,4 mg/ml).\nOrdination: <strong>5 mg morfin</strong>.\nHur många ml?', a: '0.5', unit: 'ml', hint: '5 ÷ 10 = 0,5 ml' },
-      { q: 'Du ger <strong>1,5 ml</strong> Morfin-Skopolamin (Hyoscin 0,4 mg/ml).\nHur mycket Hyoscin?', a: '0.6', unit: 'mg', hint: '1,5 × 0,4 = 0,6 mg' },
-      { q: 'Du ger <strong>0,5 ml</strong> Morfinskopolamin (Hyoscin 0,4 mg/ml).\nHur mycket Hyoscin?', a: '0.2', unit: 'mg', hint: '0,5 × 0,4 = 0,2 mg' },
-      { q: '<strong>Mogadon 5 mg/tablett</strong>. Ordination: 30 mg per dygn, 3 tillfällen.\nHur många tabletter per tillfälle?', a: '2', unit: 'tabletter', hint: '30 ÷ 3 = 10 mg. 10 ÷ 5 = 2 tabletter.' },
-      { q: '<strong>Waran 2,5 mg/tablett</strong>. Patienten ordineras 15 mg.\nHur många tabletter?', a: '6', unit: 'tabletter', hint: '15 ÷ 2,5 = 6 tabletter' },
-      { q: 'Doktacillin 250 mg/ml (1 g i 4 ml).\nPatienten ordineras <strong>325 mg</strong>.\nHur många ml?', a: '1.3', unit: 'ml', hint: '325 ÷ 250 = 1,3 ml' },
-      { q: 'Adrenalin 1 mg/ml. Patient ordineras <strong>0,4 mg</strong>.\nHur många ml?', a: '0.4', unit: 'ml', hint: '0,4 ÷ 1 = 0,4 ml' },
-      { q: 'Catapresan 15 µg/ml. Patient väger 55 kg, ordineras <strong>1,5 µg/kg</strong>.\nHur många ml?', a: '5.5', unit: 'ml', hint: '55 × 1,5 = 82,5 µg. 82,5 ÷ 15 = 5,5 ml' },
-      { q: 'Rubinul-Neostigmin 0,5 mg/ml Neostigmin.\nDu ger <strong>3 ml</strong>. Hur mycket Neostigmin?', a: '1.5', unit: 'mg', hint: '3 × 0,5 = 1,5 mg' },
-      { q: 'Bricanyl ordineras <strong>5 µg/kg</strong> till barn 16 kg.\nHur stor totalsubstans?', a: '80', unit: 'µg', hint: '5 × 16 = 80 µg' },
-      { q: 'Exelon Depotplåster 13,3 mg/24 tim. Trillar av efter <strong>8 timmar</strong>.\nHur mycket mg fick patienten? (en decimal)', a: '4.4', unit: 'mg', hint: '13,3 ÷ 24 × 8 = 4,43 ≈ 4,4 mg', tol: 0.1 },
-      { q: 'Petidin 50 mg/ml. Patient ordineras <strong>60 mg</strong>.\nHur många ml?', a: '1.2', unit: 'ml', hint: '60 ÷ 50 = 1,2 ml' },
-      { q: 'NovoRapid 100 E/ml, penna 3 ml. Patient tar 24 E/dag.\nHur många <strong>hela</strong> pennor för 20 dagar?', a: '2', unit: 'pennor', hint: '24 × 20 = 480 E. 1 penna = 300 E. 480 ÷ 300 = 1,6 → 2 pennor.' },
-      { q: 'Enalapril 20 mg ska ges. Tabletterna är <strong>2,5 mg</strong>.\nHur många tabletter?', a: '8', unit: 'tabletter', hint: '20 ÷ 2,5 = 8 tabletter' },
-      { q: 'Cilaxoral droppar 7,5 mg/ml. Ordination: 0,4 ml. 1 ml = 20 droppar.\nHur många droppar?', a: '8', unit: 'droppar', hint: '0,4 × 20 = 8 droppar' },
-      { q: 'Stesolid 5 mg/ml spruta. Uppdraget är 4,6 ml.\nHur mycket aktiv substans?', a: '23', unit: 'mg', hint: '4,6 × 5 = 23 mg' },
-      { q: 'Glykopyrron 10 µg/kg + Neostigmin 50 µg/kg. Barn 10 kg.\nHur mycket Neostigmin?', a: '500', unit: 'µg', hint: '50 × 10 = 500 µg' },
-      { q: 'Neostigmin 0,5 mg/ml. Du ger <strong>3 ml</strong> Rubinul-Neostigmin.\nHur mycket Neostigmin?', a: '1.5', unit: 'mg', hint: '3 × 0,5 = 1,5 mg' },
-    ]
-  },
-  {
-    id: 2, name: 'Spädning', icon: '🧪',
-    questions: [
-      { q: 'Morfin <strong>10 mg/ml → 0,5 mg/ml</strong>, exakt 10 ml.\nHur mycket morfin drar du upp?', a: '0.5', unit: 'ml', hint: 'C₁V₁=C₂V₂ → 10×V₁ = 0,5×10 → 0,5 ml' },
-      { q: 'Morfin <strong>10 mg/ml → 0,5 mg/ml</strong>, exakt 10 ml.\nHur mycket NaCl tillsätter du?', a: '9.5', unit: 'ml', hint: '10 – 0,5 = 9,5 ml NaCl' },
-      { q: 'Adrenalin 1 mg/ml → <strong>0,1 mg/ml</strong>.\nHur mycket NaCl till 2 ml Adrenalin?', a: '18', unit: 'ml', hint: '1×2 = 0,1×V₂ → V₂=20. 20–2=18 ml NaCl.' },
-      { q: 'Adrenalin 1 mg/ml → <strong>0,01%</strong> (0,1 mg/ml). 0,5 ml Adrenalin.\nHur mycket NaCl?', a: '4.5', unit: 'ml', hint: '1×0,5=0,1×V₂ → V₂=5. 5–0,5=4,5 ml NaCl.' },
-      { q: 'Brietal® 0,5 g ska spädas till <strong>20 mg/ml</strong>.\nHur mycket NaCl?', a: '25', unit: 'ml', hint: '500 mg ÷ 20 mg/ml = 25 ml NaCl.' },
-      { q: 'Brietal® 0,5 g ska spädas till <strong>10 mg/ml</strong>.\nHur mycket NaCl?', a: '50', unit: 'ml', hint: '500 mg ÷ 10 mg/ml = 50 ml NaCl.' },
-      { q: '10 ml Cyklokapron 100 mg/ml + <strong>90 ml NaCl</strong> = 100 ml.\nVilken styrka (mg/ml)?', a: '10', unit: 'mg/ml', hint: '1 000 mg i 100 ml = 10 mg/ml' },
-      { q: '10 ml Cyklokapron 100 mg/ml + <strong>100 ml NaCl</strong> = 110 ml.\nVilken styrka (mg/ml)? Avrunda till heltal.', a: '9', unit: 'mg/ml', hint: '1 000 ÷ 110 ≈ 9,09 → 9 mg/ml' },
-      { q: 'Bricanyl 0,5 mg/ml → <strong>50 µg/ml</strong>.\nHur mycket NaCl till 1 ml Bricanyl?', a: '9', unit: 'ml', hint: '500 µg ÷ 50 = 10 ml total. 10–1=9 ml NaCl.' },
-      { q: '4 ampuller á 1 ml morfin <strong>10 mg/ml</strong> → <strong>1 mg/ml</strong>.\nHur mycket NaCl?', a: '36', unit: 'ml', hint: '4×10=40 mg. 40÷1=40 ml total. 40–4=36 ml.' },
-      { q: 'Morfin 10 mg/ml → <strong>1 mg/ml</strong>, volym 20 ml.\nHur mycket morfin?', a: '2', unit: 'ml', hint: '10×V₁=1×20 → V₁=2 ml morfin' },
-      { q: 'Morfin 10 mg/ml. Späd 1 ml → <strong>1 mg/ml</strong>.\nHur mycket NaCl?', a: '9', unit: 'ml', hint: '10×1=1×V₂ → V₂=10. 10–1=9 ml NaCl.' },
-      { q: 'Petidin 50 mg/ml, 2 ml + <strong>8 ml NaCl</strong>.\nPatient ordineras 30 mg – hur många ml av spädningen?', a: '3', unit: 'ml', hint: '100 mg i 10 ml = 10 mg/ml. 30÷10=3 ml.' },
-      { q: 'Petidin 2 ml, 50 mg/ml → <strong>10 mg/ml</strong>.\nHur mycket NaCl?', a: '8', unit: 'ml', hint: '100 mg ÷ 10 = 10 ml total. 10–2=8 ml.' },
-      { q: 'Catapresan 150 µg/ml → <strong>15 µg/ml</strong>, totalt 10 ml.\nHur mycket Catapresan?', a: '1', unit: 'ml', hint: '15×10=150 µg. 150÷150=1 ml.' },
-      { q: 'Morfin 10 mg/ml → 1 mg/ml, sprutpump 20 ml.\nHur mycket NaCl?', a: '18', unit: 'ml', hint: '10×V₁=1×20 → V₁=2 ml morfin. 20–2=18 ml NaCl.' },
-      { q: 'Morfin 10 mg/ml → 1 mg/ml, exakt 10 ml.\nHur mycket morfin?', a: '1', unit: 'ml', hint: '10×V₁=1×10 → V₁=1 ml morfin' },
-      { q: 'Adrenalin 1 mg/ml. Späd 2 ml → <strong>0,1 mg/ml</strong>.\nHur mycket NaCl?', a: '18', unit: 'ml', hint: '1×2=0,1×V₂ → V₂=20. 20–2=18 ml.' },
-      { q: 'Morfin 10 mg/ml → 1 mg/ml, exakt 10 ml.\nHur mycket NaCl?', a: '9', unit: 'ml', hint: '10–1=9 ml NaCl' },
-      { q: 'Cyklokapron 100 mg/ml, 10 ml späds med 90 ml NaCl.\nVilken styrka?', a: '10', unit: 'mg/ml', hint: '1 000 mg ÷ 100 ml = 10 mg/ml' },
-    ]
-  },
-  {
-    id: 3, name: 'Infusion & Dropptakt', icon: '💧',
-    questions: [
-      { q: 'Rehydrex, <strong>7 ml/kg/timme</strong>, patient 70 kg.\nHur många ml/h på infusionspumpen?', a: '490', unit: 'ml/h', hint: '7 × 70 = 490 ml/h' },
-      { q: 'Infusionshastighet 490 ml/h. 1 ml = 20 droppar.\nVilken dropptakt (dr/min)?', a: '163', unit: 'dr/min', hint: '490÷60×20 ≈ 163 dr/min', tol: 1 },
-      { q: 'Ringer-Acetat 1 000 ml på <strong>12 timmar</strong>. 1 ml = 20 droppar.\nDropptakt (dr/min)?', a: '28', unit: 'dr/min', hint: '1000÷720×20 ≈ 28 dr/min', tol: 1 },
-      { q: 'Ringer-Acetat 1 000 ml på <strong>4 timmar</strong>.\nHur många ml/h?', a: '250', unit: 'ml/h', hint: '1 000 ÷ 4 = 250 ml/h' },
-      { q: 'Ringer-Acetat 500 ml på <strong>5 timmar</strong>. 1 ml = 20 droppar.\nDropptakt (dr/min)?', a: '33', unit: 'dr/min', hint: '500÷300×20 ≈ 33 dr/min', tol: 1 },
-      { q: 'Morfin 6 ml ska ges på sprutpump på <strong>5 minuter</strong>.\nHastighet (ml/h)?', a: '72', unit: 'ml/h', hint: '6÷5×60 = 72 ml/h' },
-      { q: 'Morfin 1 mg/ml ska ge <strong>1,5 mg per timme</strong>.\nHastighet (ml/h)?', a: '1.5', unit: 'ml/h', hint: '1,5 mg ÷ 1 mg/ml = 1,5 ml/h' },
-      { q: 'Addex-Kaliumklorid 2 mmol/ml. Patienten ordineras <strong>60 mmol</strong>.\nHur många ml?', a: '30', unit: 'ml', hint: '60 ÷ 2 = 30 ml' },
-      { q: 'Addex-Kaliumklorid 60 mmol i 1 000 ml. Max <strong>10 mmol/timme</strong>.\n1 030 ml total. Dropptakt? (1 ml = 20 dr)', a: '57', unit: 'dr/min', hint: '6 timmar. 1030÷360×20 ≈ 57 dr/min', tol: 2 },
-      { q: 'Addex-Natriumklorid 4 mmol/ml. Patienten ordineras <strong>80 mmol</strong>.\nHur många ml?', a: '20', unit: 'ml', hint: '80 ÷ 4 = 20 ml' },
-      { q: 'Doxyferm 20 mg/ml, 2 ampuller á 5 ml tillsätts 500 ml NaCl.\nHur mycket verksam substans totalt?', a: '200', unit: 'mg', hint: '2 × 5 × 20 = 200 mg' },
-      { q: '200 mg Doxyferm ges på 1,5 timme, patient 80 kg.\nSubstans per kg per minut? (µg/kg/min, en decimal)', a: '27.8', unit: 'µg/kg/min', hint: '200 000 ÷ (90×80) = 27,8', tol: 0.5 },
-      { q: 'Furix® 10 mg/ml, 25 ml i 475 ml NaCl. <strong>150 ml återstår</strong> vid avbrott.\nHur mycket har patienten fått?', a: '175', unit: 'mg', hint: '0,5 mg/ml × 350 ml = 175 mg' },
-      { q: 'Glucos 50 mg/ml, 40 dr/min. 1 ml = 20 droppar.\nHur mycket efter <strong>1,5 timmar</strong>?', a: '180', unit: 'ml', hint: '2 ml/min × 90 = 180 ml' },
-      { q: 'Xylocard 20 mg/ml, 10 ampuller á 5 ml i 950 ml = 1 000 ml.\nHalva infusionen given – hur mycket substans?', a: '500', unit: 'mg', hint: 'Totalt 1 000 mg. Halva = 500 mg.' },
-      { q: 'Addex-Kaliumklorid 2 mmol/ml. Patienten ordineras <strong>40 mmol</strong>.\nHur många ml?', a: '20', unit: 'ml', hint: '40 ÷ 2 = 20 ml' },
-      { q: 'Cyklokapron 10 mg/kg, patient 80 kg. Max 1 ml/min (100 mg/ml).\nHur lång tid tar injektionen?', a: '8', unit: 'minuter', hint: '10×80=800 mg. 800÷100=8 ml. 8÷1=8 min.' },
-      { q: 'Rehydrex 1 000 ml, 7 ml/kg/h, patient 70 kg.\nDropptakt om 1 ml = 15 droppar?', a: '122', unit: 'dr/min', hint: '490÷60×15 ≈ 122 dr/min', tol: 2 },
-      { q: 'Infusion 500 ml, 33 dr/min, 1 ml = 20 dr. Startar kl 07:30.\nHur mycket efter 2 h 30 min? (en decimal)', a: '247.5', unit: 'ml', hint: '33×150÷20 = 247,5 ml', tol: 1 },
-      { q: 'Furix® 10 mg/ml, 25 ml + 475 ml NaCl = 500 ml.\nVilken styrka (mg/ml) har lösningen?', a: '0.5', unit: 'mg/ml', hint: '250 mg ÷ 500 ml = 0,5 mg/ml' },
-    ]
-  },
-  {
-    id: 4, name: 'Syrgas', icon: '🫁',
-    questions: [
-      { q: 'Syrgasflaska: volym <strong>10 l</strong>, tryck <strong>200 bar</strong>.\nHur många liter disponibel syrgas?', a: '2000', unit: 'liter', hint: '10 × 200 = 2 000 l' },
-      { q: 'Syrgasflaska: volym <strong>2,5 l</strong>, tryck <strong>200 bar</strong>.\nHur många liter disponibel syrgas?', a: '500', unit: 'liter', hint: '2,5 × 200 = 500 l' },
-      { q: 'Patient behöver <strong>3 l/min</strong>. Flaska 5 l, 120 bar.\nHur länge räcker syrgasen (minuter)?', a: '200', unit: 'minuter', hint: '5×120=600 l. 600÷3=200 min' },
-      { q: 'Transport: patient <strong>3 l/min</strong>, 20 min. Flaska 2,5 l.\nMinsta tryck på manometern?', a: '24', unit: 'bar', hint: '3×20=60 l. 60÷2,5=24 bar' },
-      { q: 'Transport: patient <strong>4 l/min</strong>, 40 min. Flaska 2,5 l.\nMinsta tryck?', a: '64', unit: 'bar', hint: '4×40=160 l. 160÷2,5=64 bar' },
-      { q: 'Transport: patient <strong>5 l/min</strong>, 25 min. Flaska 2,5 l.\nVilket tryck måste manometern visa?', a: '50', unit: 'bar', hint: '5×25=125 l. 125÷2,5=50 bar' },
-      { q: 'Ambulans: Tub 1: 3 l, 150 bar. Tub 2: 10 l, 200 bar.\nFlöde 10 l/min. Hur länge totalt (minuter)?', a: '245', unit: 'minuter', hint: '450+2000=2450 l. 2450÷10=245 min' },
-      { q: 'Patient på grimma, <strong>2 l/min</strong>. Transportflaska 2,5 l, 160 bar.\nHur länge räcker syrgasen (minuter)?', a: '200', unit: 'minuter', hint: '2,5×160=400 l. 400÷2=200 min' },
-      { q: 'Patient <strong>5 l/min</strong>. Flaska 2,5 l, 200 bar.\nHur länge räcker syrgasen (minuter)?', a: '100', unit: 'minuter', hint: '2,5×200=500 l. 500÷5=100 min' },
-      { q: 'Flaska 10 l, 200 bar. Ordineras <strong>10 l/min</strong>.\nEfter 1 timme visar manometern 100 bar. Verkligt flöde (l/min)?', a: '16.7', unit: 'l/min', hint: '10×100=1000 l kvar. Förbrukat=1000 l. 1000÷60≈16,7', tol: 0.5 },
-      { q: 'Flaska 10 l, 200 bar. Ordineras <strong>5 l/min</strong>.\nEfter 1 timme visar manometern 140 bar. Verkligt flöde?', a: '10', unit: 'l/min', hint: '10×(200-140)=600 l. 600÷60=10 l/min' },
-      { q: 'Patient <strong>1 l/min</strong>. Flaska 5 l, 60 bar.\nHur länge räcker syrgasen (minuter)?', a: '300', unit: 'minuter', hint: '5×60=300 l. 300÷1=300 min' },
-      { q: 'Patient behöver <strong>3 l/min</strong>. Flaska 2,5 l.\nVilket tryck krävs för 25 min transport?', a: '30', unit: 'bar', hint: '3×25=75 l. 75÷2,5=30 bar' },
-      { q: 'Flaska 2,5 l, tryck 120 bar. Flöde <strong>4 l/min</strong>.\nHur länge räcker syrgasen (minuter)?', a: '75', unit: 'minuter', hint: '2,5×120=300 l. 300÷4=75 min' },
-      { q: 'Ambulanstuberna räcker 245 minuter.\nHur många hela timmar + minuter kvar? Ange timmar.', a: '4', unit: 'timmar', hint: '245÷60=4 h 5 min → 4 timmar' },
-      { q: 'Ambulanstuberna räcker 245 minuter (4 h 5 min).\nHur många minuter kvar efter 4 hela timmar?', a: '5', unit: 'minuter', hint: '245−240=5 minuter' },
-      { q: 'Patient lungödem <strong>10 l/min</strong>. Flaska 10 l (200 bar).\nManometern visar 100 bar efter 1 timme. Verkligt flöde?', a: '16.7', unit: 'l/min', hint: 'Förbrukat=10×(200-100)=1000 l. 1000÷60≈16,7', tol: 0.5 },
-      { q: '200-minutersflaska. Hur lång tid i hela timmar?', a: '3', unit: 'timmar', hint: '200÷60=3,33 → 3 hela timmar' },
-      { q: 'Syrgasflaska behövs för <strong>5 l/min</strong> i 25 min. Flaska 2,5 l.\nMinsta trycket (bar)?', a: '50', unit: 'bar', hint: '5×25=125 l. 125÷2,5=50 bar' },
-      { q: 'Patient behöver syrgas <strong>2 l/min</strong>. Flaska 2,5 l, tryck 160 bar.\nHur länge räcker syrgasen i hela timmar?', a: '3', unit: 'timmar', hint: '2,5×160=400 l. 400÷2=200 min → 3 hela timmar' },
-    ]
-  }
+  {id:'BEGREPP',  name:'Begrepp & Enheter',    icon:'📐'},
+  {id:'DOS',      name:'Dosberäkning',          icon:'💊'},
+  {id:'SPADNING', name:'Spädning',              icon:'🧪'},
+  {id:'INFUSION', name:'Infusion & Dropptakt',  icon:'💧'},
+  {id:'SYRGAS',   name:'Syrgas',                icon:'🫁'},
 ];
 
-// ═══════════════════════════════════════════════════════
-//  KONSTANTER
-// ═══════════════════════════════════════════════════════
-const EXAM_DATE        = new Date('2026-04-07T08:00:00');
-const TOTAL_EXAMS      = 20;
-const QUESTIONS_PER_EXAM = 5;  // 1 per area
-
-// State
-// miniExamResults[i] = null | true | false   (i = 0..19)
-// areaStats[areaId] = { right: N, total: N }
-let state = {
-  miniExamResults: Array(TOTAL_EXAMS).fill(null),
-  areaStats: AREAS.map(() => ({ right: 0, total: 0 }))
+const QS = {
+BEGREPP:[
+  {q:'500 mg = ? mikrogram',a:'500000',u:'µg',h:'1 mg = 1 000 µg'},
+  {q:'40 mikrogram = ? mg',a:'0.04',u:'mg',h:'1 mg = 1 000 µg → 40/1000'},
+  {q:'0,2 ml = ? mikroliter',a:'200',u:'µl',h:'1 ml = 1 000 µl'},
+  {q:'1 gram = ? mg',a:'1000',u:'mg',h:'1 g = 1 000 mg'},
+  {q:'Avrunda 0,886 till en decimal',a:'0.9',u:'',h:'Tiondelen är 8, hundradelen är 8 ≥ 5 → runda upp'},
+  {q:'Avrunda 0,496 till en decimal',a:'0.5',u:'',h:'Tiondelen är 4, hundradelen är 9 ≥ 5 → runda upp'},
+  {q:'Avrunda 0,1536 till två decimaler',a:'0.15',u:'',h:'Hundradelen är 5, tusendelen är 3 < 5 → behåll'},
+  {q:'Avrunda 0,265562 till tre decimaler',a:'0.266',u:'',h:'Tusendelarna: 265, nästa siffra 5 → runda upp'},
+  {q:'Hur många hela dagar räcker 700 ml Malvitona vid 30 ml × 2/dag?',a:'11',u:'dagar',h:'700 / 60 = 11,67 → 11 hela dagar'},
+  {q:'Glukos 10 % — vad är styrkan i mg/ml?',a:'100',u:'mg/ml',h:'10 g / 100 ml = 100 mg/ml'},
+  {q:'Styrka 70 mg/ml — uttryckt som %?',a:'7',u:'%',h:'70 g / 1 000 ml = 7 g / 100 ml = 7 %'},
+  {q:'Hur många dagar räcker 250 ml Bisolvon 1,6 mg/ml vid 5 ml × 3/dag?',a:'16',u:'dagar',h:'5×3 = 15 ml/dag. 250/15 ≈ 16,7 → 16 hela dagar'},
+  {q:'234 minuter = ? timmar (hela timmar)',a:'3',u:'tim',h:'234 / 60 = 3,9 → 3 hela timmar och 54 min'},
+],
+DOS:[
+  {q:'Patient ordineras 25 mg Petidin (styrka 50 mg/ml). Hur många ml?',a:'0.5',u:'ml',h:'25 / 50 = 0,5 ml'},
+  {q:'Morfin-Skopolamin (10+0,4 mg/ml), ordination 5 mg+0,2 mg. Hur många ml?',a:'0.5',u:'ml',h:'5 / 10 = 0,5 ml'},
+  {q:'Morfin-Skopolamin (10+0,4 mg/ml), ordination 7,5 mg+0,3 mg. Hur många ml?',a:'0.75',u:'ml',h:'7,5 / 10 = 0,75 ml'},
+  {q:'Waran tabletter 2,5 mg, ordination 15 mg. Hur många tabletter?',a:'6',u:'tabletter',h:'15 / 2,5 = 6'},
+  {q:'Enalapril 20 mg, bytes till 2,5 mg tabletter. Hur många tabletter?',a:'8',u:'tabletter',h:'20 / 2,5 = 8'},
+  {q:'Doktacillin 325 mg im. 1 g löses i 4 ml. Hur många ml ges?',a:'1.3',u:'ml',h:'325/1000 × 4 = 1,3 ml'},
+  {q:'Catapresan 15 µg/ml, patient 55 kg, ordination 1,5 µg/kg. Hur många ml?',a:'5.5',u:'ml',h:'55 × 1,5 / 15 = 5,5 ml'},
+  {q:'Cyklokapron 100 mg/ml, du ger 8,5 ml. Verksam substans i gram?',a:'0.85',u:'g',h:'8,5 × 100 = 850 mg = 0,85 g'},
+  {q:'Cilaxoral 7,5 mg/ml, ordination 0,4 ml. 1 ml = 20 droppar. Hur många droppar?',a:'8',u:'droppar',h:'0,4 × 20 = 8'},
+  {q:'Exelon plåster 13,3 mg/24h. Trillar av efter 8 h. Hur många mg fick patienten?',a:'4.4',u:'mg',h:'13,3 × 8/24 ≈ 4,43 → 4,4 mg'},
+  {q:'Hyoscin (0,4 mg/ml), du ger 1,5 ml. Verksam substans (mg)?',a:'0.6',u:'mg',h:'1,5 × 0,4 = 0,6 mg'},
+  {q:'NovoRapid 100 E/ml, penna 3 ml. 20 dagar: 6+8+10 E/dag. Hur många hela pennor behövs?',a:'2',u:'pennor',h:'24 E/dag × 20 = 480 E. En penna = 300 E. 480/300 = 1,6 → 2 pennor'},
+],
+SPADNING:[
+  {q:'Morfin 10 mg/ml → 0,5 mg/ml, volym 10 ml. Hur mycket läkemedel?',a:'0.5',u:'ml',h:'C1V1=C2V2 → 10×V1=0,5×10 → V1=0,5 ml'},
+  {q:'Morfin 10 mg/ml → 0,5 mg/ml, volym 10 ml. Hur mycket NaCl?',a:'9.5',u:'ml',h:'10 – 0,5 = 9,5 ml'},
+  {q:'Morfin 10 mg/ml → 0,1 mg/ml, volym 50 ml. Hur mycket läkemedel?',a:'0.5',u:'ml',h:'0,1×50/10 = 0,5 ml'},
+  {q:'Morfin 10 mg/ml → 0,1 mg/ml, volym 50 ml. Hur mycket NaCl?',a:'49.5',u:'ml',h:'50 – 0,5 = 49,5 ml'},
+  {q:'Morfin 10 mg/ml → 1 mg/ml, volym 20 ml. Hur mycket NaCl?',a:'18',u:'ml',h:'20×1/10 = 2 ml morfin → 20–2 = 18 ml NaCl'},
+  {q:'Morfin 10 mg/ml, 4 ampuller á 1 ml → 1 mg/ml. Hur mycket NaCl?',a:'36',u:'ml',h:'4 ml × 10 mg/ml = 40 mg → 40/1 = 40 ml tot → 40–4 = 36 ml NaCl'},
+  {q:'Adrenalin 1 mg/ml, 2 ml → 0,1 mg/ml. Hur mycket NaCl?',a:'18',u:'ml',h:'2×1=2 mg → 2/0,1=20 ml tot → 20–2 = 18 ml NaCl'},
+  {q:'Adrenalin 1 mg/ml, 0,5 ml → 0,01 % (0,1 mg/ml). Hur mycket NaCl?',a:'4.5',u:'ml',h:'0,5 mg → 0,5/0,1=5 ml tot → 5–0,5 = 4,5 ml NaCl'},
+  {q:'Petidin 50 mg/ml, 2 ml → 10 mg/ml. Hur mycket NaCl?',a:'8',u:'ml',h:'100 mg → 100/10=10 ml tot → 10–2 = 8 ml NaCl'},
+  {q:'Petidin 50 mg/ml, 1,5 ml → 10 mg/ml. Hur mycket NaCl?',a:'6',u:'ml',h:'75 mg → 75/10=7,5 ml tot → 7,5–1,5 = 6 ml NaCl'},
+  {q:'Catapresan 150 µg/ml → 15 µg/ml, volym 10 ml. Hur mycket Catapresan?',a:'1',u:'ml',h:'15×10/150 = 1 ml'},
+  {q:'Brietal 0,5 g → styrka 10 mg/ml. Hur mycket NaCl?',a:'50',u:'ml',h:'500 mg / 10 mg/ml = 50 ml (pulvrets volym försummas)'},
+  {q:'Brietal 0,5 g → styrka 20 mg/ml. Hur mycket NaCl?',a:'25',u:'ml',h:'500 mg / 20 mg/ml = 25 ml'},
+  {q:'Cyklokapron 100 mg/ml 10 ml + 90 ml NaCl. Ny styrka?',a:'10',u:'mg/ml',h:'10×100 / (10+90) = 1000/100 = 10 mg/ml'},
+],
+INFUSION:[
+  {q:'1 000 ml Rehydrex, 7 ml/kg/h, patient 70 kg. Infusionshastighet?',a:'490',u:'ml/h',h:'7×70 = 490 ml/h'},
+  {q:'490 ml/h, 1 ml = 20 dr. Dropptakt?',a:'163',u:'dr/min',h:'490/60 × 20 ≈ 163 dr/min'},
+  {q:'1 500 ml, 10 ml/kg/h, patient 65 kg. Infusionshastighet?',a:'650',u:'ml/h',h:'10×65 = 650 ml/h'},
+  {q:'Ringer-Acetat 1 000 ml på 12 h, 1 ml = 20 dr. Dropptakt?',a:'28',u:'dr/min',h:'1000×20/(12×60) ≈ 27,8 → 28'},
+  {q:'Ringer-Acetat 1 000 ml på 4 h. Infusionshastighet?',a:'250',u:'ml/h',h:'1000/4 = 250 ml/h'},
+  {q:'500 ml Ringer-Acetat på 5 h, 1 ml = 20 dr. Dropptakt?',a:'33',u:'dr/min',h:'500×20/(5×60) = 33,3 → 33'},
+  {q:'Morfin 1 mg/ml, pumpen ska ge 1,5 mg/h. Pumpinställning?',a:'1.5',u:'ml/h',h:'1,5/1 = 1,5 ml/h'},
+  {q:'6 ml ska ges på 5 minuter (sprutpump). Hastighet?',a:'72',u:'ml/h',h:'6/5 × 60 = 72 ml/h'},
+  {q:'Dropptakt 50 dr/min, 1 ml = 20 dr. Hur länge tar 1 000 ml? (minuter)',a:'400',u:'min',h:'1000×20/50 = 400 min (= 6 h 40 min)'},
+  {q:'Dropptakt 45 dr/min, 1 ml = 20 dr, pågår 2 h. Hur mycket vätska?',a:'270',u:'ml',h:'45/20 × 120 = 270 ml'},
+  {q:'Furix: 500 ml total, 250 mg furosemid, 150 ml återstår. Verksam substans given?',a:'175',u:'mg',h:'350/500 × 250 = 175 mg'},
+  {q:'Xylocard: 10 ampuller á 5 ml × 20 mg/ml i 1 000 ml glukos. Halva infusionen given – verksam substans?',a:'500',u:'mg',h:'10×5×20 = 1 000 mg total. Halvt = 500 mg'},
+  {q:'Addex-Kaliumklorid 2 mmol/ml, ordineras 60 mmol. Hur många ml tillsätts?',a:'30',u:'ml',h:'60/2 = 30 ml'},
+  {q:'Addens-Natriumklorid 4 mmol/ml, ordineras 80 mmol. Hur många ml tillsätts?',a:'20',u:'ml',h:'80/4 = 20 ml'},
+],
+SYRGAS:[
+  {q:'Patient behöver ≥3 l/min O₂, transport 20 min, flaska 2,5 l. Lägsta tryck?',a:'24',u:'bar',h:'3×20/2,5 = 24 bar'},
+  {q:'Patient behöver ≥6 l/min O₂, transport 20 min, flaska 3 l. Lägsta tryck?',a:'40',u:'bar',h:'6×20/3 = 40 bar'},
+  {q:'Patient behöver ≥4 l/min O₂, transport 40 min, flaska 2,5 l. Lägsta tryck?',a:'64',u:'bar',h:'4×40/2,5 = 64 bar'},
+  {q:'Patient behöver ≥5 l/min O₂, transport 15 min, flaska 3 l. Lägsta tryck?',a:'25',u:'bar',h:'5×15/3 = 25 bar'},
+  {q:'Syrgasflaska 2,5 l, tryck 200 bar. Disponibel syrgas?',a:'500',u:'liter',h:'2,5×200 = 500 liter'},
+  {q:'Flaska 2,5 l, behöver 5 l/min i 25 min. Vilket tryck krävs?',a:'50',u:'bar',h:'5×25/2,5 = 50 bar'},
+  {q:'Flaska 5 l, tryck 120 bar, flöde 3 l/min. Hur länge räcker syrgasen?',a:'200',u:'min',h:'5×120/3 = 200 min'},
+  {q:'Transportflaska 2,5 l, tryck 160 bar, flöde 2 l/min. Hur länge räcker syrgasen?',a:'200',u:'min',h:'2,5×160/2 = 200 min'},
+  {q:'Ambulans: 2×3-litersflaskor (120 + 110 bar), flöde 5 l/min. Hur länge räcker?',a:'138',u:'min',h:'(3×120 + 3×110)/5 = 690/5 = 138 min'},
+  {q:'Tub 1: 3 l 150 bar. Tub 2: 10 l 200 bar. Flöde 10 l/min. Hur länge räcker?',a:'245',u:'min',h:'(450+2000)/10 = 245 min (= 4 h 5 min)'},
+  {q:'Tub 1: 3 l 75 bar. Tub 2: 10 l 120 bar. Flöde 5 l/min. Hur länge räcker?',a:'285',u:'min',h:'(225+1200)/5 = 285 min (= 4 h 45 min)'},
+  {q:'Flaska 10 l, 200 bar, 10 l/min. Efter 1 h visar manometern 100 bar. Verkligt flöde?',a:'16.7',u:'l/min',h:'(200-100)×10 = 1000 l på 60 min → 1000/60 ≈ 16,7 l/min'},
+],
 };
 
-// Current session
-let session = {
-  examIndex: 0,
-  questions: [],   // [{...question, areaId, areaName, areaIcon}, ...]
-  currentQ: 0,
-  answers: []      // true/false per question
-};
-
-// Daily
-let daily = { questions: [], currentQ: 0, showingAnswer: false };
-
-// ═══════════════════════════════════════════════════════
-//  STORAGE
-// ═══════════════════════════════════════════════════════
-function loadState() {
-  try {
-    const s = localStorage.getItem('lmb_v3');
-    if (s) {
-      const p = JSON.parse(s);
-      if (p.miniExamResults) state.miniExamResults = p.miniExamResults;
-      if (p.areaStats)       state.areaStats = p.areaStats;
-    }
-  } catch(e) {}
-}
-function saveState() {
-  try { localStorage.setItem('lmb_v3', JSON.stringify(state)); } catch(e) {}
+// Daily question pool (flat list cycling through all areas)
+const DAILY_POOL = [];
+const maxLen = Math.max(...AREAS.map(a=>QS[a.id].length));
+for(let i=0;i<maxLen;i++){
+  AREAS.forEach(a=>{if(i<QS[a.id].length) DAILY_POOL.push({...QS[a.id][i],area:a.id,areaName:a.name,areaIcon:a.icon});});
 }
 
-// ═══════════════════════════════════════════════════════
-//  BERÄKNINGAR
-// ═══════════════════════════════════════════════════════
-function daysUntilExam() {
-  return Math.max(0, Math.ceil((EXAM_DATE - new Date()) / 86400000));
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+const SK='lmb_v4';
+function defState(){
+  return {
+    aStats:{BEGREPP:{r:0,t:0},DOS:{r:0,t:0},SPADNING:{r:0,t:0},INFUSION:{r:0,t:0},SYRGAS:{r:0,t:0}},
+    approvedExams:0,
+    totalExams:0,
+    examIdx:{BEGREPP:0,DOS:0,SPADNING:0,INFUSION:0,SYRGAS:0},
+    daily:{lastDate:null,streak:0,qIdx:0},
+    examDate:null,
+  };
 }
-function conductedCount() { return state.miniExamResults.filter(r => r !== null).length; }
-function passedCount()    { return state.miniExamResults.filter(r => r === true).length; }
-function nextExamIndex()  {
-  const i = state.miniExamResults.findIndex(r => r !== true);
-  return i === -1 ? TOTAL_EXAMS - 1 : i;
+function load(){try{return JSON.parse(localStorage.getItem(SK))||defState();}catch{return defState();}}
+function save(s){localStorage.setItem(SK,JSON.stringify(s));}
+
+let state=load();
+
+// ═══════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════
+function todayStr(){return new Date().toISOString().split('T')[0];}
+function yesterdayStr(){const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().split('T')[0];}
+
+function checkAns(user,q){
+  const u=parseFloat(user.toString().replace(',','.').trim());
+  const c=parseFloat(q.a.toString().replace(',','.').trim());
+  if(isNaN(u)||isNaN(c))return false;
+  const tol=Math.max(0.01*Math.abs(c),0.005);
+  return Math.abs(u-c)<=tol;
 }
 
-// Strength per area: based on % right
-function areaStrength(areaId) {
-  const s = state.areaStats[areaId];
-  if (s.total === 0) return 'none';
-  const pct = s.right / s.total;
-  if (pct >= 0.75) return 'stark';
-  if (pct >= 0.45) return 'medel';
-  return 'svag';
-}
-function strengthLabel(str) {
-  return { none: 'Ej börjad', svag: '⚠ Svag', medel: '~ Medel', stark: '✓ Stark' }[str];
-}
-function strengthClass(str) {
-  return { none: 'pill-none', svag: 'pill-svag', medel: 'pill-medel', stark: 'pill-stark' }[str];
+function daysLeft(){
+  const d=state.examDate||'2099-01-01';
+  const exam=new Date(d);
+  const today=new Date();today.setHours(0,0,0,0);
+  return Math.max(0,Math.ceil((exam-today)/(86400000)));
 }
 
-// ═══════════════════════════════════════════════════════
-//  SKÄRMBYTE
-// ═══════════════════════════════════════════════════════
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+function strength(a){
+  if(!a||a.t===0)return null;
+  const p=a.r/a.t;
+  if(p>=0.75)return{label:'Stark',cls:'strength-stark'};
+  if(p>=0.45)return{label:'Medel',cls:'strength-medel'};
+  return{label:'Svag',cls:'strength-svag'};
+}
+
+function canDoDaily(){
+  return state.daily.lastDate !== todayStr();
+}
+
+// ═══════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════
+let currentScreen='sStart';
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  if (id === 'startScreen') renderStart();
+  currentScreen=id;
 }
 
-// ═══════════════════════════════════════════════════════
-//  STARTSKÄRM
-// ═══════════════════════════════════════════════════════
-function renderStart() {
-  document.getElementById('daysCount').textContent = daysUntilExam();
+// ═══════════════════════════════════════════
+//  START SCREEN
+// ═══════════════════════════════════════════
+function renderStart(){
+  const s=document.getElementById('sStart');
+  const approved=state.approvedExams;
+  const streak=state.daily.streak||0;
+  const pct=Math.min(100,Math.round(approved/20*100));
+  const dailyDone=!canDoDaily();
 
-  const conducted = conductedCount();
-  const passed    = passedCount();
-
-  document.getElementById('conductedCount').textContent = conducted;
-  document.getElementById('passedCount').textContent    = passed;
-
-  const cPct = conducted / TOTAL_EXAMS * 100;
-  const oPct = conducted > 0 ? passed / conducted * 100 : 0;
-
-  document.getElementById('progressFill').style.width   = cPct + '%';
-  document.getElementById('progressPassed').style.width = oPct + '%';
-  document.getElementById('progressPct').textContent    = Math.round(cPct) + '%';
-  document.getElementById('progressSubLeft').textContent = `${conducted} av ${TOTAL_EXAMS} minitentor genomförda`;
+  // Streak dots (last 7 days indicator — simplified: show filled dots for streak up to 7)
+  const dots=Array.from({length:7},(_,i)=>{
+    const filled=streak>0 && i>=(7-Math.min(streak,7));
+    return `<div class="streak-dot${filled?' done':''}"></div>`;
+  }).join('');
 
   // Area rows
-  const container = document.getElementById('areaRows');
-  container.innerHTML = '';
+  const areaRows=AREAS.map(a=>{
+    const st=state.aStats[a.id];
+    const str=strength(st);
+    const sub=st.t>0?`${st.r} rätt av ${st.t} besvarade`:'Ej påbörjat';
+    return `<div class="area-row">
+      <div class="area-icon">${a.icon}</div>
+      <div class="area-body">
+        <div class="area-name">${a.name}</div>
+        <div class="area-sub">${sub}</div>
+      </div>
+      ${str?`<div class="strength-pill ${str.cls}">${str.label}</div>`:''}
+    </div>`;
+  }).join('');
 
-  AREAS.forEach(area => {
-    const str    = areaStrength(area.id);
-    const st     = state.areaStats[area.id];
-    const subTxt = st.total > 0
-      ? `${st.right} rätt av ${st.total} besvarade frågor`
-      : 'Inga frågor besvarade än';
+  s.innerHTML=`<div class="start-wrap">
+    <div class="start-top">
+      <div class="brand">LMB Träning</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="countdown"><div class="cd-num">${daysLeft()}</div><div class="cd-lbl">dagar kvar</div></div>
+        <button class="settings-btn" onclick="openSettings()" title="Ändra tentadatum">⚙️</button>
+      </div>
+    </div>
 
-    container.innerHTML += `
-      <div class="area-row">
-        <div class="area-row-icon">${area.icon}</div>
-        <div class="area-row-body">
-          <div class="area-row-top">
-            <div class="area-row-name">${area.name}</div>
-            <div class="strength-pill ${strengthClass(str)}">${strengthLabel(str)}</div>
-          </div>
-          <div class="area-row-sub">${subTxt}</div>
+    <!-- Minitentor progress -->
+    <div class="pcard">
+      <div class="pcard-row">
+        <div class="pcard-title">🎓 Godkända minitentor</div>
+        <div class="pcard-val">${approved}/20</div>
+      </div>
+      <div class="pbar-track"><div class="pbar-fill teal" style="width:${pct}%"></div></div>
+    </div>
+
+    <!-- Streak -->
+    <div class="streak-card">
+      <div class="streak-icon">🔥</div>
+      <div class="streak-body">
+        <div style="display:flex;align-items:baseline;gap:6px;">
+          <div class="streak-num">${streak}</div>
+          <div style="font-size:13px;color:var(--muted);">dagar i rad</div>
         </div>
-      </div>`;
-  });
+        <div class="streak-dots">${dots}</div>
+      </div>
+      ${dailyDone?`<div style="font-size:20px;">✅</div>`:`<div style="font-size:11px;color:var(--teal);font-weight:600;">Idag ej klar</div>`}
+    </div>
+
+    <!-- Ämnesområden -->
+    <div class="area-section">
+      <div class="area-title-row"><span class="area-title">Ämnesområden</span></div>
+      ${areaRows}
+    </div>
+
+    <!-- Knappar -->
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="startDaily()" style="${dailyDone?'opacity:.5;pointer-events:none;':''}">
+        ${dailyDone?'✅ Dagens fråga klar':'❓ Dagens fråga'}
+      </button>
+      <button class="btn btn-primary" onclick="startExam()">📝 Starta minitenta</button>
+    </div>
+  </div>`;
 }
 
-// ═══════════════════════════════════════════════════════
-//  BYGG MINITENTA – 1 fråga per ämnesområde
-// ═══════════════════════════════════════════════════════
-function buildExamQuestions(examIndex) {
-  return AREAS.map(area => {
-    // Rotate through questions so each exam gets a different question
-    const q = area.questions[examIndex % area.questions.length];
-    return { ...q, areaId: area.id, areaName: area.name, areaIcon: area.icon };
-  });
+// ═══════════════════════════════════════════
+//  ONBOARDING / SETTINGS
+// ═══════════════════════════════════════════
+function renderOnboard(isSettings){
+  const s=document.getElementById('sOnboard');
+  const cur=state.examDate||'';
+  s.innerHTML=`<div class="ob-wrap">
+    <div class="ob-icon">${isSettings?'⚙️':'🎓'}</div>
+    <div class="ob-title">${isSettings?'Ändra tentadatum':'När är din tenta?'}</div>
+    <div class="ob-sub">${isSettings?'Uppdatera datumet för din tentamen.':'Ange datumet för din läkemedelsberäkningstenta så håller appen koll på nedräkningen.'}</div>
+    <div class="ob-label">Tentadatum</div>
+    <input class="ob-date" type="date" id="obDate" value="${cur}" min="${todayStr()}">
+    <div class="ob-actions">
+      <button class="btn btn-primary" onclick="saveExamDate()">Spara datum</button>
+      ${isSettings?`<button class="btn btn-ghost" onclick="goHome()">← Avbryt</button>`:''}
+    </div>
+  </div>`;
+  setTimeout(()=>{const el=document.getElementById('obDate');if(el)el.focus();},100);
 }
 
-// ═══════════════════════════════════════════════════════
-//  SVARSKONTROLL
-// ═══════════════════════════════════════════════════════
-function checkAnswer(val, q) {
-  if (!val.trim()) return false;
-  const raw = val.trim().replace(',', '.');
-  const nu = parseFloat(raw);
-  const nc = parseFloat(q.a);
-  const tol = q.tol !== undefined ? q.tol : 0.01;
-  if (!isNaN(nu) && !isNaN(nc)) {
-    return Math.abs(nu - nc) <= Math.max(tol, Math.abs(nc) * 0.005);
-  }
-  return raw.toLowerCase() === String(q.a).toLowerCase();
-}
-
-// ═══════════════════════════════════════════════════════
-//  STARTA MINITENTA
-// ═══════════════════════════════════════════════════════
-function startExam() {
-  const idx = nextExamIndex();
-  session = {
-    examIndex: idx,
-    questions: buildExamQuestions(idx),
-    currentQ: 0,
-    answers: []
-  };
-  renderExamQuestion();
-  showScreen('examScreen');
-}
-
-function renderExamQuestion() {
-  const q   = session.questions[session.currentQ];
-  const num = session.currentQ + 1;
-
-  document.getElementById('examNum').textContent      = session.examIndex + 1;
-  document.getElementById('examProgressFill').style.width = ((num - 1) / QUESTIONS_PER_EXAM * 100) + '%';
-  document.getElementById('qNumber').textContent      = `FRÅGA ${num} AV ${QUESTIONS_PER_EXAM}`;
-  document.getElementById('qAreaTag').innerHTML       = `${q.areaIcon} ${q.areaName}`;
-  document.getElementById('qText').innerHTML          = q.q.replace(/\n/g, '<br>');
-
-  const hintEl = document.getElementById('qHint');
-  hintEl.style.display = 'none';
-  if (q.hint) hintEl.textContent = '💡 ' + q.hint;
-
-  document.getElementById('answerUnit').textContent   = q.unit || '';
-  document.getElementById('answerInput').value        = '';
-  document.getElementById('answerInput').className    = 'answer-input';
-  document.getElementById('feedbackMsg').className    = 'feedback-msg';
-  document.getElementById('feedbackMsg').textContent  = '';
-
-  const btn = document.getElementById('examActionBtn');
-  btn.textContent = 'Kontrollera svar →';
-  btn.onclick = submitAnswer;
-
-  // Dots
-  let dots = '';
-  for (let i = 0; i < QUESTIONS_PER_EXAM; i++) {
-    let cls = i < session.currentQ
-      ? (session.answers[i] ? 'done-ok' : 'done-fail')
-      : i === session.currentQ ? 'active' : '';
-    dots += `<div class="dot ${cls}"></div>`;
-  }
-  document.getElementById('questionDots').innerHTML = dots;
-
-  document.getElementById('examActionBtn').scrollIntoView && document.getElementById('examActionBtn').scrollIntoView(false);
-  setTimeout(() => document.getElementById('answerInput').focus(), 300);
-}
-
-function submitAnswer() {
-  const input = document.getElementById('answerInput');
-  const val   = input.value.trim();
-  if (!val) { flash(input); return; }
-
-  const q       = session.questions[session.currentQ];
-  const correct = checkAnswer(val, q);
-  session.answers.push(correct);
-
-  // Update area stats
-  state.areaStats[q.areaId].total++;
-  if (correct) state.areaStats[q.areaId].right++;
-
-  input.className = 'answer-input ' + (correct ? 'correct' : 'wrong');
-  const fb = document.getElementById('feedbackMsg');
-
-  if (correct) {
-    fb.className   = 'feedback-msg correct';
-    fb.textContent = `✓ Rätt! Svaret är ${q.a}${q.unit ? ' ' + q.unit : ''}`;
-  } else {
-    fb.className   = 'feedback-msg wrong';
-    fb.textContent = `✗ Fel. Rätt svar: ${q.a}${q.unit ? ' ' + q.unit : ''}`;
-    if (q.hint) document.getElementById('qHint').style.display = 'block';
-  }
-
-  const btn = document.getElementById('examActionBtn');
-  btn.onclick     = nextQuestion;
-  btn.textContent = session.currentQ + 1 < QUESTIONS_PER_EXAM ? 'Nästa fråga →' : 'Se resultat →';
-}
-
-function nextQuestion() {
-  session.currentQ++;
-  if (session.currentQ >= QUESTIONS_PER_EXAM) showResult();
-  else renderExamQuestion();
-}
-
-function flash(el) {
-  el.style.borderColor = 'var(--coral)';
-  setTimeout(() => el.style.borderColor = '', 500);
-}
-
-// ═══════════════════════════════════════════════════════
-//  RESULTATSKÄRM
-// ═══════════════════════════════════════════════════════
-function showResult() {
-  const correct = session.answers.filter(Boolean).length;
-  const passed  = correct === QUESTIONS_PER_EXAM;
-
-  state.miniExamResults[session.examIndex] = passed;
-  saveState();
-
-  document.getElementById('resultIcon').textContent     = passed ? '🎉' : '😤';
-  document.getElementById('resultTitle').textContent    = passed ? 'Godkänt!' : 'Inte godkänt';
-  document.getElementById('resultScoreNum').textContent = `${correct}/${QUESTIONS_PER_EXAM}`;
-  document.getElementById('resultScoreNum').style.color = passed ? 'var(--teal)' : 'var(--coral)';
-
-  if (passed) {
-    const remaining = state.miniExamResults.filter(r => r !== true).length;
-    document.getElementById('resultSubtitle').textContent =
-      remaining > 0
-        ? `${passedCount()} av ${TOTAL_EXAMS} minitentor godkända totalt.`
-        : 'Alla 20 minitentor godkända! 🏆';
-  } else {
-    document.getElementById('resultSubtitle').textContent =
-      `Du behöver 5/5 för godkänt. Försök igen!`;
-  }
-
-  // Per-area breakdown
-  const list = document.getElementById('resultAreaList');
-  list.innerHTML = '';
-  session.questions.forEach((q, i) => {
-    const ok = session.answers[i];
-    list.innerHTML += `
-      <div class="ral-row">
-        <div class="ral-icon">${q.areaIcon}</div>
-        <div class="ral-name">${q.areaName}</div>
-        <div class="ral-result">${ok ? '✅' : '❌'}</div>
-      </div>`;
-  });
-
-  // Next button
-  const nextBtn = document.getElementById('resultNextBtn');
-  if (!passed) {
-    nextBtn.textContent = 'Försök igen →';
-    nextBtn.onclick     = startExam;
-    nextBtn.style.display = '';
-  } else if (passedCount() < TOTAL_EXAMS) {
-    nextBtn.textContent = 'Nästa minitenta →';
-    nextBtn.onclick     = startExam;
-    nextBtn.style.display = '';
-  } else {
-    nextBtn.style.display = 'none';
-  }
-
-  showScreen('resultScreen');
-}
-
-function confirmExit() {
-  if (confirm('Avsluta minitentan och gå tillbaka till startmenyn?')) showScreen('startScreen');
-}
-
-// ═══════════════════════════════════════════════════════
-//  DAGLIG FRÅGA
-// ═══════════════════════════════════════════════════════
-function startDaily() {
-  const allQ = [];
-  AREAS.forEach(a => a.questions.forEach(q =>
-    allQ.push({...q, areaId: a.id, areaName: a.name, areaIcon: a.icon})
-  ));
-  for (let i = allQ.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [allQ[i], allQ[j]] = [allQ[j], allQ[i]];
-  }
-  daily = { questions: allQ, currentQ: 0, showingAnswer: false };
-  renderDaily();
-  showScreen('dailyScreen');
-}
-
-function renderDaily() {
-  if (daily.currentQ >= daily.questions.length) { showScreen('startScreen'); return; }
-  const q = daily.questions[daily.currentQ];
-  document.getElementById('dqAreaTag').innerHTML      = `${q.areaIcon} ${q.areaName}`;
-  document.getElementById('dqText').innerHTML         = q.q.replace(/\n/g, '<br>');
-  document.getElementById('dqHint').style.display     = 'none';
-  if (q.hint) document.getElementById('dqHint').textContent = '💡 ' + q.hint;
-  document.getElementById('dailyAnswerUnit').textContent = q.unit || '';
-  document.getElementById('dailyAnswerInput').value   = '';
-  document.getElementById('dailyAnswerInput').className = 'answer-input';
-  document.getElementById('dailyFeedbackMsg').className = 'feedback-msg';
-  document.getElementById('dailyFeedbackMsg').textContent = '';
-  document.getElementById('dailyActionBtn').textContent   = 'Kontrollera svar →';
-  document.getElementById('dailyActionBtn').onclick       = submitDailyAnswer;
-  daily.showingAnswer = false;
-  setTimeout(() => document.getElementById('dailyAnswerInput').focus(), 300);
-}
-
-function submitDailyAnswer() {
-  if (daily.showingAnswer) { daily.currentQ++; renderDaily(); return; }
-  const input = document.getElementById('dailyAnswerInput');
-  const val   = input.value.trim();
-  if (!val) { flash(input); return; }
-
-  const q       = daily.questions[daily.currentQ];
-  const correct = checkAnswer(val, q);
-
-  // Track stats per area (same as exam questions)
-  state.areaStats[q.areaId].total++;
-  if (correct) state.areaStats[q.areaId].right++;
-  saveState();
-
-  input.className = 'answer-input ' + (correct ? 'correct' : 'wrong');
-  const fb = document.getElementById('dailyFeedbackMsg');
-  if (correct) {
-    fb.className   = 'feedback-msg correct';
-    fb.textContent = `✓ Rätt! Svaret är ${q.a}${q.unit ? ' ' + q.unit : ''}`;
-  } else {
-    fb.className   = 'feedback-msg wrong';
-    fb.textContent = `✗ Fel. Rätt svar: ${q.a}${q.unit ? ' ' + q.unit : ''}`;
-    if (q.hint) document.getElementById('dqHint').style.display = 'block';
-  }
-
-  daily.showingAnswer = true;
-  document.getElementById('dailyActionBtn').textContent = 'Nästa fråga →';
-  document.getElementById('dailyActionBtn').onclick = () => { daily.currentQ++; renderDaily(); };
-}
-
-// ═══════════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════════
-function init() {
-  loadState();
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+function saveExamDate(){
+  const val=document.getElementById('obDate').value;
+  if(!val)return;
+  state.examDate=val;
+  save(state);
   renderStart();
-  showScreen('startScreen');
-  setTimeout(() => {
-    const s = document.getElementById('splash');
-    s.classList.add('hide');
-    setTimeout(() => s.remove(), 400);
-  }, 500);
+  showScreen('sStart');
 }
-window.addEventListener('load', init);
+
+function openSettings(){
+  renderOnboard(true);
+  showScreen('sOnboard');
+}
+
+// ═══════════════════════════════════════════
+//  DAILY QUESTION
+// ═══════════════════════════════════════════
+let dailyQ=null;
+let dailyAnswered=false;
+let dailyCorrect=false;
+
+function startDaily(){
+  if(!canDoDaily())return;
+  dailyQ=DAILY_POOL[state.daily.qIdx % DAILY_POOL.length];
+  dailyAnswered=false;
+  renderDaily();
+  showScreen('sDaily');
+}
+
+function renderDaily(){
+  const s=document.getElementById('sDaily');
+  const q=dailyQ;
+  s.innerHTML=`<div class="q-wrap">
+    <div class="q-header">
+      <button class="q-back" onclick="goHome()">←</button>
+      <div class="q-meta">
+        <div class="q-area">${q.areaIcon} ${q.areaName}</div>
+        <div class="q-progress-lbl">Dagens fråga</div>
+      </div>
+    </div>
+
+    <div class="q-card">
+      <div class="q-text">${q.q.replace(/\n/g,'<br>')}</div>
+      ${q.h?`<button class="q-hint-btn" onclick="toggleHint('dHint')">Visa tips</button><div class="q-hint" id="dHint">💡 ${q.h}</div>`:''}
+    </div>
+
+    ${!dailyAnswered?`
+      <div class="q-input-row">
+        <input class="q-input" id="dInput" type="number" inputmode="decimal" placeholder="Svar" autocomplete="off">
+        <span class="q-unit">${q.u}</span>
+      </div>
+      <button class="btn btn-primary" onclick="submitDaily()">Kontrollera ✓</button>
+    `:`
+      <div class="feedback ${dailyCorrect?'correct':'wrong'}">
+        <div class="fb-title ${dailyCorrect?'correct':'wrong'}">${dailyCorrect?'✓ Rätt!':'✗ Fel'}</div>
+        <div class="fb-answer">Rätt svar: ${q.a} ${q.u}</div>
+      </div>
+      <button class="btn btn-ghost" onclick="goHome()">← Tillbaka</button>
+    `}
+  </div>`;
+
+  if(!dailyAnswered){
+    const inp=document.getElementById('dInput');
+    inp.focus();
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter')submitDaily();});
+  }
+}
+
+function submitDaily(){
+  const inp=document.getElementById('dInput');
+  const val=inp?inp.value.trim():'';
+  if(!val)return;
+  dailyCorrect=checkAns(val,dailyQ);
+  dailyAnswered=true;
+
+  // Update stats
+  state.aStats[dailyQ.area].t++;
+  if(dailyCorrect)state.aStats[dailyQ.area].r++;
+
+  // Streak
+  const today=todayStr();
+  const yesterday=yesterdayStr();
+  if(state.daily.lastDate===yesterday){
+    state.daily.streak=(state.daily.streak||0)+1;
+  } else if(state.daily.lastDate!==today){
+    state.daily.streak=1;
+  }
+  state.daily.lastDate=today;
+  state.daily.qIdx=(state.daily.qIdx||0)+1;
+  save(state);
+  renderDaily();
+}
+
+// ═══════════════════════════════════════════
+//  MINI-EXAM
+// ═══════════════════════════════════════════
+let examQs=[];    // [{area, q, answered, correct, userVal}, ...]
+let examCurrent=0;
+let examAnswered=false;
+
+function startExam(){
+  // Pick one question per area using rotation index
+  examQs=AREAS.map(a=>{
+    const pool=QS[a.id];
+    const idx=state.examIdx[a.id]||0;
+    const q=pool[idx%pool.length];
+    return{area:a.id,areaName:a.name,areaIcon:a.icon,q,answered:false,correct:false,userVal:''};
+  });
+  // Advance indices
+  AREAS.forEach(a=>{state.examIdx[a.id]=((state.examIdx[a.id]||0)+1)%QS[a.id].length;});
+  save(state);
+
+  examCurrent=0;
+  examAnswered=false;
+  renderExam();
+  showScreen('sExam');
+}
+
+function renderExam(){
+  const s=document.getElementById('sExam');
+  const item=examQs[examCurrent];
+  const q=item.q;
+  const n=examQs.length;
+  const done=item.answered;
+
+  s.innerHTML=`<div class="q-wrap">
+    <div class="q-header">
+      <button class="q-back" onclick="confirmExitExam()">←</button>
+      <div class="q-meta">
+        <div class="q-area">${item.areaIcon} ${item.areaName}</div>
+        <div class="q-progress-lbl">Fråga ${examCurrent+1} av ${n}</div>
+      </div>
+    </div>
+
+    <div class="q-card">
+      <div class="q-text">${q.q.replace(/\n/g,'<br>')}</div>
+      ${q.h?`<button class="q-hint-btn" onclick="toggleHint('eHint')">Visa tips</button><div class="q-hint" id="eHint">💡 ${q.h}</div>`:''}
+    </div>
+
+    ${!done?`
+      <div class="q-input-row">
+        <input class="q-input" id="eInput" type="number" inputmode="decimal" placeholder="Svar" autocomplete="off">
+        <span class="q-unit">${q.u}</span>
+      </div>
+      <button class="btn btn-primary" onclick="submitExamQ()">Kontrollera ✓</button>
+    `:`
+      <div class="feedback ${item.correct?'correct':'wrong'}">
+        <div class="fb-title ${item.correct?'correct':'wrong'}">${item.correct?'✓ Rätt!':'✗ Fel'}</div>
+        <div class="fb-answer">Rätt svar: ${q.a} ${q.u}</div>
+      </div>
+      ${examCurrent<n-1
+        ?`<button class="btn btn-primary" onclick="nextExamQ()">Nästa fråga →</button>`
+        :`<button class="btn btn-primary" onclick="finishExam()">Se resultat</button>`
+      }
+    `}
+  </div>`;
+
+  if(!done){
+    const inp=document.getElementById('eInput');
+    inp.focus();
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter')submitExamQ();});
+  }
+}
+
+function submitExamQ(){
+  const inp=document.getElementById('eInput');
+  const val=inp?inp.value.trim():'';
+  if(!val)return;
+  const item=examQs[examCurrent];
+  item.userVal=val;
+  item.correct=checkAns(val,item.q);
+  item.answered=true;
+
+  // Track area stats
+  state.aStats[item.area].t++;
+  if(item.correct)state.aStats[item.area].r++;
+  save(state);
+  renderExam();
+}
+
+function nextExamQ(){
+  examCurrent++;
+  renderExam();
+}
+
+function finishExam(){
+  const correct=examQs.filter(x=>x.correct).length;
+  const total=examQs.length;
+  const passed=correct===total; // 100% required
+
+  state.totalExams++;
+  if(passed)state.approvedExams++;
+  save(state);
+
+  renderResult(correct,total,passed);
+  showScreen('sResult');
+}
+
+function renderResult(correct,total,passed){
+  const s=document.getElementById('sResult');
+  s.innerHTML=`<div class="result-wrap">
+    <div class="result-emoji">${passed?'🎉':'📊'}</div>
+    <div class="result-score">${correct}/${total}</div>
+    <div class="${passed?'result-badge pass':'result-badge fail'}">
+      <div class="result-badge-txt">${passed?'✓ GODKÄND – räknas mot ditt mål!':'✗ Ej godkänd – alla rätt krävs'}</div>
+    </div>
+    <div class="result-msg">
+      ${passed
+        ?`Bra jobbat! Du har nu ${state.approvedExams} av 20 godkända minitentor.`
+        :`Fortsätt öva! Tentan kräver 100 % rätt för att räknas.`}
+    </div>
+    <div class="btn-row" style="width:100%;margin-top:8px;">
+      <button class="btn btn-primary" onclick="startExam()">Gör ny minitenta</button>
+      <button class="btn btn-ghost" onclick="goHome()">← Hem</button>
+    </div>
+  </div>`;
+}
+
+function confirmExitExam(){
+  if(confirm('Avbryta pågående minitenta?'))goHome();
+}
+
+// ═══════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════
+function toggleHint(id){
+  const el=document.getElementById(id);
+  if(el)el.style.display=el.style.display==='block'?'none':'block';
+}
+function goHome(){
+  renderStart();
+  showScreen('sStart');
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+function init(){
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+  if(!state.examDate){
+    renderOnboard(false);
+    showScreen('sOnboard');
+  } else {
+    renderStart();
+    showScreen('sStart');
+  }
+  setTimeout(()=>{
+    const sp=document.getElementById('splash');
+    sp.classList.add('hide');
+    setTimeout(()=>sp.remove(),380);
+  },500);
+}
+window.addEventListener('load',init);
 </script>
 </body>
 </html>
